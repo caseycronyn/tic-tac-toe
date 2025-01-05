@@ -2,97 +2,95 @@
 
 int main(int argc, char *argv[])
 {
-   char * location = init_board();
-
-   // Ensure proper usage
+   // error checking
    if (argc != 3)
    {
-      printf("Proper usage: Player 1 name, Player 2 name\n");
+      fprintf(stderr, "Proper usage: Player 1 name, Player 2 name\n");
+      exit(EXIT_FAILURE);
+   }
+   if (strlen(argv[1]) > BIGSTRING || strlen(argv[2]) > BIGSTRING)
+   {
+      fprintf(stderr, "error: player name is malformed\n");
       exit(EXIT_FAILURE);
    }
 
-   char *player1_s = malloc(sizeof(argv[1]));
-   char *player2_s = malloc(sizeof(argv[2]));
+   char location[BOARDSIZE][BOARDSIZE];
+   init_board(location);
+   // names
+   char * player1_s = argv[1];
+   char * player2_s = argv[2];
 
-   player1_s = argv[1];
-   player2_s = argv[2];
+   player player1, player2;
+   player1.piece = 'X';
+   player2.piece = 'O';
+   strcpy(player1.name, argv[1]);
+   strcpy(player2.name, argv[2]);
 
-   // get First char in name
-   char player1_c = player1_s[0];
-   char player2_c = player2_s[0];
-
-   printf("Example move: a1\n");
-
-   print_board(location);
-
-   // alternate turns until game over
-   do
-   {
-      bool finished;
-      finished = play_turn(player1_c, player1_s, location);
-      print_board(location);
-      if (finished)
-      {
-         break;
-      }
-      finished = play_turn(player2_c, player2_s, location);
-      print_board(location);
-      if (finished)
-      {
-         break;
-      }
-   }
-   while (check_end(location) == false);
-
+   play_game(&player1, &player2, location);
    // check if game finished
    printf("Game Over\n");
 }
 
-char * init_board(void)
+void play_game(player * player1, player * player2, char location[][BOARDSIZE])
 {
-   // location array
-   char *location = malloc(9 * sizeof(char));
-
-   // Initialise all positions to ' '
-   for (int i = 0; i < 3; i++)
-   {
-      for (int j = 0; j < 3; j++)
-      {
-         location[(i * 3) + j] = ' ';
+   bool end = false;
+   for (int i = 0; i < GAMEOVER; i++) {
+      print_board(location);
+      // who's turn
+      if (i % 2 == 0) {
+         end = play_turn(player1, location);
+      }
+      else {
+         end = play_turn(player2, location);
+      }
+      // done
+      if (end || check_end(location)) {
+         i = GAMEOVER;
       }
    }
-   return location;
 }
 
-bool play_turn(char player_c, char *player_s, char *location)
+void init_board(char location[][BOARDSIZE])
+{
+   for (int i = 0; i < BOARDSIZE; i++)
+   {
+      for (int j = 0; j < BOARDSIZE; j++)
+      {
+         location[i][j] = EMPTY;
+      }
+   }
+}
+
+bool play_turn(player * plyr, char location[][BOARDSIZE])
 {
    int row;
    char column;
+   // get input
    // ask for row/ column and verify
    do
    {
       // ask for choice
-      printf("%s's Move: ", player_s);
+      printf("%s's Move: ", plyr->name);
       scanf(" %c%i", &column, &row);
 
       // 0 index
       column = tolower(column) - 'a';
       row--;
 
-      if (location[(row * 3) + column] != ' ')
+      if (location[row][column] != EMPTY)
       {
          printf("Position unavailable, pick another. (Move format example where square is empty: a1)\n");
       }
    }
-   while (location[(row * 3) + column] != ' ');
+   while (location[row][column] != ' ');
 
    // initialise choice
-   location[(row * 3) + column] = player_c;
+   location[row][column] = plyr->piece;
 
    // check for win and print winner
-   if (check_winner(player_c, location))
+   if (check_winner(plyr->piece, location))
    {
-      printf("%s wins!\n\n", player_s);
+      printf("%s wins!\n\n", plyr->name);
       return true;
    }
 
@@ -106,47 +104,47 @@ bool play_turn(char player_c, char *player_s, char *location)
    return false;
 }
 
-void print_board(char *location)
+void print_board(char location[][BOARDSIZE])
 {
    // format board and assign positions
    printf("    A   B   C \n");
-   printf("1   %c | %c | %c \n", location[0], location[1], location[2]);
+   printf("1   %c | %c | %c \n", location[0][0], location[0][1], location[0][2]);
    printf("   ___|___|___\n");
-   printf("2   %c | %c | %c \n", location[3], location[4], location[5]);
+   printf("2   %c | %c | %c \n", location[1][0], location[1][1], location[1][2]);
    printf("   ___|___|___\n");
-   printf("3   %c | %c | %c \n", location[6], location[7], location[8]);
+   printf("3   %c | %c | %c \n", location[2][0], location[2][1], location[2][2]);
    printf("      |   |      \n\n");
 }
 
-bool check_winner(char a, char *location)
+bool check_winner(char a, char location[][BOARDSIZE])
 {
    // check rows and columns
    int win_r;
    int win_c;
-   for (int x = 0; x < 3; x++)
+   for (int x = 0; x < BOARDSIZE; x++)
    {
       win_r = 0;
       win_c = 0;
-      for (int y = 0; y < 3; y++)
+      for (int y = 0; y < BOARDSIZE; y++)
       {
          // check rows
-         if (location[(y * 3) + x] == a)
+         if (location[y][x] == a)
          {
             win_r++;
          }
          // check columns
-         if (location[(x * 3) + y] == a)
+         if (location[x][y] == a)
          {
             win_c++;
          }
       }
-      if (win_r == 3 || win_c == 3)
+      if (win_r == BOARDSIZE || win_c == BOARDSIZE)
       {
          return true;
       }
    }
    // check diagonals
-   if ((location[0] == a && location[4] == a && location[8] == a) || (location[2] == a && location[4] == a && location[6] == a))
+   if ((location[0][0] == a && location[1][1] == a && location[2][2] == a) || (location[0][2] == a && location[1][1] == a && location[2][0] == a))
    {
       return true;
    }
@@ -156,14 +154,14 @@ bool check_winner(char a, char *location)
    }
 }
 
-bool check_end(char *location)
+bool check_end(char location[][BOARDSIZE])
 {
    char end = 0;
-   for (int i = 0; i < 3; i++)
+   for (int i = 0; i < BOARDSIZE; i++)
    {
-      for (int j = 0; j < 3; j++)
+      for (int j = 0; j < BOARDSIZE; j++)
       {
-         if (location[(i * 3) + j] == ' ')
+         if (location[i][j] == ' ')
          {
             return false;
          }
