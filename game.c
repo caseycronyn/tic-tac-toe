@@ -14,160 +14,136 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
    }
 
-   char location[BOARDSIZE][BOARDSIZE];
-   init_board(location);
-   // names
-   char * player1_s = argv[1];
-   char * player2_s = argv[2];
+   // initialisation
+   char board[BOARDSIZE][BOARDSIZE];
+   init_board(board);
 
-   player player1, player2;
+   player player1, player2, cur_player;
    player1.piece = 'X';
    player2.piece = 'O';
    strcpy(player1.name, argv[1]);
    strcpy(player2.name, argv[2]);
 
-   play_game(&player1, &player2, location);
-   // check if game finished
-   printf("Game Over\n");
-}
-
-void play_game(player * player1, player * player2, char location[][BOARDSIZE])
-{
-   bool end = false;
+   int move[2];
+   int * result;
+   bool winner = false;
    for (int i = 0; i < GAMEOVER; i++) {
-      print_board(location);
+      print_board(board);
       // who's turn
       if (i % 2 == 0) {
-         end = play_turn(player1, location);
+         cur_player = player1;
       }
       else {
-         end = play_turn(player2, location);
+         cur_player = player2;
       }
-      // done
-      if (end || check_end(location)) {
-         i = GAMEOVER;
+      result = get_move(cur_player.name, board, move);
+      play_turn(&cur_player, board, result);
+      winner = check_winner(cur_player.piece, board);
+      if (winner) {
+         printf("%s wins!\n\n", cur_player.name);
+         return 0;
       }
    }
+   printf("Game Over\n");
+   return 0;
 }
 
-void init_board(char location[][BOARDSIZE])
+void init_board(char board[][BOARDSIZE])
 {
    for (int i = 0; i < BOARDSIZE; i++)
    {
       for (int j = 0; j < BOARDSIZE; j++)
       {
-         location[i][j] = EMPTY;
+         board[i][j] = EMPTY;
       }
    }
 }
 
-bool play_turn(player * plyr, char location[][BOARDSIZE])
+bool play_turn(player * plyr, char board[][BOARDSIZE], int * move)
 {
-   int row;
-   char column;
-   // get input
-   // ask for row/ column and verify
-   do
-   {
-      // ask for choice
-      printf("%s's Move: ", plyr->name);
-      scanf(" %c%i", &column, &row);
-
-      // 0 index
-      column = tolower(column) - 'a';
-      row--;
-
-      if (location[row][column] != EMPTY)
-      {
-         printf("Position unavailable, pick another. (Move format example where square is empty: a1)\n");
-      }
-   }
-   while (location[row][column] != ' ');
-
+   char column = move[0];
+   int row = move[1];
    // initialise choice
-   location[row][column] = plyr->piece;
-
-   // check for win and print winner
-   if (check_winner(plyr->piece, location))
-   {
-      printf("%s wins!\n\n", plyr->name);
-      return true;
-   }
-
-   // check for end
-   if (check_end(location))
-   {
-      printf("Tie\n");
-      return true;
-   }
-
+   board[row][column] = plyr->piece;
    return false;
 }
 
-void print_board(char location[][BOARDSIZE])
+int * get_move(char * name, char board[][BOARDSIZE], int * move)
 {
-   // format board and assign positions
-   printf("    A   B   C \n");
-   printf("1   %c | %c | %c \n", location[0][0], location[0][1], location[0][2]);
-   printf("   ___|___|___\n");
-   printf("2   %c | %c | %c \n", location[1][0], location[1][1], location[1][2]);
-   printf("   ___|___|___\n");
-   printf("3   %c | %c | %c \n", location[2][0], location[2][1], location[2][2]);
-   printf("      |   |      \n\n");
+   int row;
+   char column;
+   // ask for row/ column and verify
+   while (true) {
+      // ask for choice
+      printf("%s's Move: ", name);
+      scanf(" %c%d", &column, &row);
+
+      column = tolower(column) - 'a';
+      row--;
+
+      if (column >= BOARDSIZE || row >= BOARDSIZE || column < 0 || row < 0) {
+         printf("Invalid square. Please pick from a1 to c3");
+      }
+      if (board[row][column] != EMPTY) {
+         printf("Cannot place a piece here, please pick a free position from a1 to c3.\n");
+      }
+      else {
+         move[0] = column;
+         move[1] = row;
+         return move;
+      }
+   }
 }
 
-bool check_winner(char a, char location[][BOARDSIZE])
+bool check_winner(char a, char board[][BOARDSIZE])
 {
-   // check rows and columns
-   int win_r;
-   int win_c;
-   for (int x = 0; x < BOARDSIZE; x++)
-   {
-      win_r = 0;
-      win_c = 0;
-      for (int y = 0; y < BOARDSIZE; y++)
-      {
-         // check rows
-         if (location[y][x] == a)
-         {
-            win_r++;
+   if (check_rows_and_cols(a, board) || check_diagonals(a, board)) {
+      return true;
+   }
+   return false;
+}
+
+bool check_rows_and_cols(char x, char loc[][BOARDSIZE])
+{
+   int winr = 0;
+   int winc = 0;
+   for (int i = 0; i < BOARDSIZE; i++) {
+      winr = 0;
+      winc = 0;
+      for (int j = 0; j < BOARDSIZE; j++) {
+         // rows
+         if (loc[i][j] == x) {
+            winr++;
          }
-         // check columns
-         if (location[x][y] == a)
-         {
-            win_c++;
+         if (loc[j][i] == x) {
+            winc++;
          }
       }
-      if (win_r == BOARDSIZE || win_c == BOARDSIZE)
-      {
+      if (winr == 3 || winc == 3) {
          return true;
       }
    }
-   // check diagonals
-   if ((location[0][0] == a && location[1][1] == a && location[2][2] == a) || (location[0][2] == a && location[1][1] == a && location[2][0] == a))
-   {
-      return true;
-   }
-   else
-   {
-      return false;
-   }
+   return false;
 }
 
-bool check_end(char location[][BOARDSIZE])
+bool check_diagonals(char x, char loc[][BOARDSIZE])
 {
-   char end = 0;
-   for (int i = 0; i < BOARDSIZE; i++)
-   {
-      for (int j = 0; j < BOARDSIZE; j++)
-      {
-         if (location[i][j] == ' ')
-         {
-            return false;
-         }
-      }
+   if ((loc[0][0] == x && loc[1][1] == x && loc[2][2] == x) || (loc[0][2] == x && loc[1][1] == x && loc[2][0] == x)) {
+      return true;
    }
-   return true;
+   return false;
+}
+
+void print_board(char board[][BOARDSIZE])
+{
+   // format board and assign positions
+   printf("    A   B   C \n");
+   printf("1   %c | %c | %c \n", board[0][0], board[0][1], board[0][2]);
+   printf("   ___|___|___\n");
+   printf("2   %c | %c | %c \n", board[1][0], board[1][1], board[1][2]);
+   printf("   ___|___|___\n");
+   printf("3   %c | %c | %c \n", board[2][0], board[2][1], board[2][2]);
+   printf("      |   |      \n\n");
 }
 
 void test(void)

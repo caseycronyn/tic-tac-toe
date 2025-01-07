@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define BIGSTRING 100
+#define BIGSTRING 30
 #define BOARDSIZE 3
 #define EMPTY ' '
 #define GAMEOVER 9
@@ -16,12 +16,13 @@ typedef struct {
 } player;
 
 // initialise all positions to ' '
-void init_board(char location[][BOARDSIZE]);
-// gets input, checks for win, checks for end
-bool play_turn(player * plyr, char location[][BOARDSIZE]);
-void print_board(char location[][BOARDSIZE]);
-bool check_winner(char x, char location[][BOARDSIZE]);
-bool check_end(char location[][BOARDSIZE]);
+void init_board(char board[][BOARDSIZE]);
+bool play_turn(player * plyr, char board[][BOARDSIZE], int * move);
+void print_board(char board[][BOARDSIZE]);
+// returns name of winner or NULL if none
+bool check_winner(char a, char board[][BOARDSIZE]);
 // loops over play turn until finished
-void play_game(player * player1, player * player2, char location[][BOARDSIZE]);
+int * get_move(char * name, char board[][BOARDSIZE], int * move);
+bool check_rows_and_cols(char x, char loc[][BOARDSIZE]);
+bool check_diagonals(char x, char loc[][BOARDSIZE]);
 void test(void);
