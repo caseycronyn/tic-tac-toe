@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f8ff;
+        }
+
+        h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 1px solid #333;
+            cursor: pointer;
+            background-color: #ffffff;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+
+        .cell.taken {
+            cursor: not-allowed;
+            background-color: #ddd;
+        }
+
+        .message {
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    <div class="instructions">
+        Take turns placing your piece (<strong>X</strong>) on the board. Try to get three in a row horizontally, vertically, or diagonally to win. 
+        The AI (<strong>O</strong>) will try to block you and win itself. Click "Restart Game" to start a new match at any time.
+    </div>
+    <div>
+        <div class="board"></div>
+        <div class="message"></div>
+        <div class="controls">
+            <button class="button" id="restart">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        const boardElement = document.querySelector('.board');
+        const messageElement = document.querySelector('.message');
+        const restartButton = document.getElementById('restart');
+        const playerPiece = 'X';
+        const aiPiece = 'O';
+
+        let board = [
+            [' ', ' ', ' '],
+            [' ', ' ', ' '],
+            [' ', ' ', ' ']
+        ];
+
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            board.forEach((row, i) => {
+                row.forEach((cell, j) => {
+                    const cellElement = document.createElement('div');
+                    cellElement.className = `cell ${cell !== ' ' ? 'taken' : ''}`;
+                    cellElement.textContent = cell;
+                    cellElement.addEventListener('click', () => handlePlayerMove(i, j));
+                    boardElement.appendChild(cellElement);
+                });
+            });
+        }
+
+        function handlePlayerMove(row, col) {
+            if (board[row][col] !== ' ') return;
+
+            board[row][col] = playerPiece;
+            renderBoard();
+
+            fetch('http://127.0.0.1:8000/play-turn/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    board: board,
+                    player_piece: playerPiece,
+                    opponent_piece: aiPiece
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    board = data.board;
+                    renderBoard();
+                    if (data.winner) {
+                        messageElement.textContent = data.winner === 'Draw' ? "It's a draw!" : `${data.winner} wins!`;
+                        boardElement.style.pointerEvents = 'none';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function restartGame() {
+            board = [
+                [' ', ' ', ' '],
+                [' ', ' ', ' '],
+                [' ', ' ', ' ']
+            ];
+            messageElement.textContent = '';
+            boardElement.style.pointerEvents = 'auto';
+            renderBoard();
+        }
+
+        restartButton.addEventListener('click', restartGame);
+
+        renderBoard();
+    </script>
+</body>
+</html>
