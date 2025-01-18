@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -68,4 +69,5 @@ def play_turn_endpoint(move: Move) -> dict:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=10000)
+    port = int(os.environ.get("PORT", 10000)) 
+    uvicorn.run(app, host="0.0.0.0", port=port)
