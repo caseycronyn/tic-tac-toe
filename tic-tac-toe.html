@@ -134,7 +134,7 @@
             board[row][col] = playerPiece;
             renderBoard();
 
-            fetch('http://127.0.0.1:8000/play-turn/', {
+            fetch('https://tic-tac-toe-8vuk.onrender.com', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
