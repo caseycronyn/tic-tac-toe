@@ -86,6 +86,10 @@
         .button:hover {
             background-color: #0056b3;
         }
+
+        .waiting {
+            cursor: wait;
+        }
     </style>
 </head>
 <body>
@@ -128,12 +132,18 @@
             });
         }
 
+        function setWaitingState(isWaiting) {
+            boardElement.style.pointerEvents = isWaiting ? 'none' : 'auto';
+            document.body.classList.toggle('waiting', isWaiting);
+        }
+
         function handlePlayerMove(row, col) {
             if (board[row][col] !== ' ') return;
 
             board[row][col] = playerPiece;
             renderBoard();
 
+            setWaitingState(true);
             fetch('https://tic-tac-toe-8vuk.onrender.com/play-turn/', {
                 method: 'POST',
                 headers: {
@@ -154,7 +164,8 @@
                         boardElement.style.pointerEvents = 'none';
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('Error:', error))
+                .finally(() => setWaitingState(false));
         }
 
         function restartGame() {
@@ -164,7 +175,7 @@
                 [' ', ' ', ' ']
             ];
             messageElement.textContent = '';
-            boardElement.style.pointerEvents = 'auto';
+            setWaitingState(false);
             renderBoard();
         }
 
